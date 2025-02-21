@@ -6,8 +6,9 @@ from aiogram.types import (
     Message, InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, ForceReply
 )
+from config import API_TOKEN, ADMINS_ID
 
-API_TOKEN = ""
+API_TOKEN = API_TOKEN
 DELIVERY_FEE = 300
 
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +26,7 @@ assortment = {
     "3": {"name": "hqd3", "base_price": 2000, "flavors": ["Мята", "Ваниль", "Клубника"]},
 }
 
-admin_ids = {}
+admin_ids = ADMINS_ID
 admin_states = {}
 
 admin_menu_reply = ReplyKeyboardMarkup(
@@ -553,17 +554,50 @@ async def order_confirmation(callback: types.CallbackQuery):
 @dp.callback_query(lambda c: c.data == "cash_payment")
 async def cash_payment_confirmation(callback: types.CallbackQuery):
     user_id = callback.from_user.id
-    await send_or_edit(callback.message.chat.id, user_id,
-                       "Ваш заказ оформлен. Оплата наличными при самовывозе. Спасибо за заказ!")
-    await callback.answer("Заказ оформлен.")
+    user_nick = callback.from_user.username if callback.from_user.username else callback.from_user.first_name
+    amount = user_data.get(user_id, {}).get("final_price", "none")
+    name = user_data.get(user_id, {}).get("product", {}).get("name", "None")
+    flavor = user_data.get(user_id, {}).get("flavor", "none")
+    address = user_data.get(user_id, {}).get("address", "none")
+    if address == "none":
+        address = user_data.get(user_id, {}).get("temp_address", "none")
+    msg = await send_or_edit(
+        callback.message.chat.id,
+        user_id,
+        "Ваш оформлен, ожидайте подтверждения администрацией.\nС вами скоро свяжутся",
+        reply_markup=None
+    )
+    user_data[user_id]["payment_message_id"] = msg
+
+    for admin_id in admin_ids:
+        print(user_data)
+        try:
+            if address == "none":
+                address = "a"
+            callback_data = f"admin_confirm_payment_{user_nick}_{user_id}_{name}_{flavor}_{address}"
+            print(callback_data)
+            await bot.send_message(
+                int(admin_id),
+                f"Пользователь @{user_nick} оформил заказ {amount} наличными. Подтвердите заказ",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="Подтвердить заказ", callback_data=callback_data)]
+                ])
+            )
+        except Exception as e:
+            logging.error(f"Ошибка при отправке уведомления администратору {admin_id}: {e}")
+    await callback.answer()
 
 
 @dp.callback_query(lambda c: c.data == "transfer_done")
 async def transfer_confirmation(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     user_nick = callback.from_user.username if callback.from_user.username else callback.from_user.first_name
-    amount = user_data.get(user_id, {}).get("final_price", "None")
-
+    amount = user_data.get(user_id, {}).get("final_price", "none")
+    name = user_data.get(user_id, {}).get("product", {}).get("name", "None")
+    flavor = user_data.get(user_id, {}).get("flavor", "none")
+    address = user_data.get(user_id, {}).get("address", "none")
+    if address == "none":
+        address = user_data.get(user_id, {}).get("temp_address", "none")
     msg = await send_or_edit(
         callback.message.chat.id,
         user_id,
@@ -573,8 +607,12 @@ async def transfer_confirmation(callback: types.CallbackQuery):
     user_data[user_id]["payment_message_id"] = msg
 
     for admin_id in admin_ids:
+        print(admin_id)
         try:
-            callback_data = f"admin_confirm_payment_{user_nick}_{user_id}"
+            if address == "none":
+                address = "a"
+            callback_data = f"admin_confirm_payment_{user_nick}_{user_id}_{name}_{flavor}_{address}"
+            print(callback_data)
             await bot.send_message(
                 admin_id,
                 f"Пользователь @{user_nick} подтвердил перевод на сумму {amount}. Подтвердите, что оплата получена.",
@@ -589,8 +627,11 @@ async def transfer_confirmation(callback: types.CallbackQuery):
 
 @dp.callback_query(lambda c: c.data.startswith("admin_confirm_payment_"))
 async def admin_payment_confirmation(callback: types.CallbackQuery):
-    customer_id = int(callback.data.split("_")[-1])
+    customer_id = int(callback.data.split("_")[4])
     payment_msg_id = user_data.get(customer_id, {}).get("payment_message_id")
+    product = callback.data.split("_")[5]
+    flavor = callback.data.split("_")[6]
+    address = callback.data.split("_")[7]
     if payment_msg_id:
         try:
             await bot.edit_message_text(
@@ -601,7 +642,10 @@ async def admin_payment_confirmation(callback: types.CallbackQuery):
         except Exception as e:
             logging.error(f"Не удалось обновить сообщение: {e}")
     try:
-        await callback.message.edit_text("Оплата подтверждена.")
+        if address != "a":
+            await callback.message.edit_text(f"Оплата подтверждена.\nДОСТАВКА\n{product}\n{flavor}\n{address}")
+        else:
+            await callback.message.edit_text(f"Оплата подтверждена.\nСАМОВЫВОЗ\n{product}\n{flavor}")
     except Exception:
         pass
     active_orders[customer_id] = {
