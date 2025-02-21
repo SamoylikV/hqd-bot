@@ -170,11 +170,24 @@ async def admin_menu_handler(message: Message):
         admin_states.pop(user_id, None)
 
 
-@dp.message()
+@dp.message(lambda message: str(message.from_user.id) in admin_ids and message.text == "Выйти из диалога")
+async def admin_exit_chat_handler(message: Message):
+    user_id = message.from_user.id
+    partner_id = active_conversations.get(user_id)
+    if partner_id:
+        await bot.send_message(partner_id, "Администратор завершил диалог.")
+        active_conversations.pop(user_id, None)
+        active_conversations.pop(partner_id, None)
+        user_data[user_id]["in_chat"] = False
+        user_data[partner_id]["in_chat"] = False
+        await send_or_edit(message.chat.id, user_id, "Вы вышли из диалога.", reply_markup=admin_menu_reply)
+    else:
+        await send_or_edit(message.chat.id, user_id, "Вы не в диалоге.")
+
+@dp.message(lambda message: message.text != "Выйти из диалога")
 async def handle_messages(message: Message):
     user_id = message.from_user.id
     text = message.text.strip()
-
     if str(user_id) in admin_ids and user_id in admin_states:
         state_info = admin_states[user_id]
         state = state_info.get("state")
@@ -383,17 +396,6 @@ async def handle_messages(message: Message):
         return
 
 
-@dp.message(lambda message: message.from_user.id in admin_ids and message.text == "Выйти из диалога")
-async def admin_exit_chat_handler(message: Message):
-    user_id = message.from_user.id
-    partner = active_conversations.get(user_id)
-    if partner:
-        await bot.send_message(partner, "Диалог завершён.")
-        user_data[user_id]["in_chat"] = False
-        user_data[partner]["in_chat"] = False
-        active_conversations.pop(user_id, None)
-        active_conversations.pop(partner, None)
-    await send_or_edit(message.chat.id, user_id, "Вы вышли из диалога.")
 
 
 @dp.callback_query(lambda c: c.data in ["pickup", "delivery", "settings"])
@@ -559,15 +561,25 @@ async def cash_payment_confirmation(callback: types.CallbackQuery):
 @dp.callback_query(lambda c: c.data == "transfer_done")
 async def transfer_confirmation(callback: types.CallbackQuery):
     user_id = callback.from_user.id
-    await send_or_edit(callback.message.chat.id, user_id,
-                       "Ваш платеж подтверждён, ожидайте подтверждения оплаты администрацией.")
+    user_nick = callback.from_user.username if callback.from_user.username else callback.from_user.first_name
+    amount = user_data.get(user_id, {}).get("final_price", "None")
+
+    msg = await send_or_edit(
+        callback.message.chat.id,
+        user_id,
+        "Ваш платеж подтверждён, ожидайте подтверждения оплаты администрацией.",
+        reply_markup=None
+    )
+    user_data[user_id]["payment_message_id"] = msg
+
     for admin_id in admin_ids:
         try:
+            callback_data = f"admin_confirm_payment_{user_nick}_{user_id}"
             await bot.send_message(
                 admin_id,
-                f"Пользователь {user_id} подтвердил перевод. Подтвердите, что оплата получена.",
+                f"Пользователь @{user_nick} подтвердил перевод на сумму {amount}. Подтвердите, что оплата получена.",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="Подтвердить оплату", callback_data=f"admin_confirm_payment_{user_id}")]
+                    [InlineKeyboardButton(text="Подтвердить оплату", callback_data=callback_data)]
                 ])
             )
         except Exception as e:
@@ -578,8 +590,16 @@ async def transfer_confirmation(callback: types.CallbackQuery):
 @dp.callback_query(lambda c: c.data.startswith("admin_confirm_payment_"))
 async def admin_payment_confirmation(callback: types.CallbackQuery):
     customer_id = int(callback.data.split("_")[-1])
-    await send_or_edit(callback.message.chat.id, customer_id,
-                       "Оплата подтверждена администратором. Ваш заказ оформлен. Спасибо!")
+    payment_msg_id = user_data.get(customer_id, {}).get("payment_message_id")
+    if payment_msg_id:
+        try:
+            await bot.edit_message_text(
+                "Оплата подтверждена администратором. Ваш заказ оформлен. Спасибо!",
+                chat_id=customer_id,
+                message_id=payment_msg_id
+            )
+        except Exception as e:
+            logging.error(f"Не удалось обновить сообщение: {e}")
     try:
         await callback.message.edit_text("Оплата подтверждена.")
     except Exception:
