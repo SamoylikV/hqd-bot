@@ -1,5 +1,6 @@
 import logging
 import uuid
+from pickletools import pybytes_or_str
 
 from aiogram import Router, types
 from handlers.chat_handlers import start_conversation
@@ -22,7 +23,6 @@ async def admin_payment_confirmation(callback: types.CallbackQuery):
     product = request_data["product_name"]
     flavor = request_data["flavor"]
     address = request_data["address"]
-    del payment_requests[request_id]
     if payment_msg_id:
         try:
             await callback.bot.edit_message_text(
@@ -33,7 +33,7 @@ async def admin_payment_confirmation(callback: types.CallbackQuery):
         except Exception as e:
             logging.error(f"Не удалось обновить сообщение: {e}")
     try:
-        if address != "a":
+        if address != "none":
             await callback.message.edit_text(f"Оплата подтверждена.\nДОСТАВКА\n{product}\n{flavor}\n{address}")
         else:
             await callback.message.edit_text(f"Оплата подтверждена.\nСАМОВЫВОЗ\n{product}\n{flavor}")

@@ -48,7 +48,7 @@ async def admin_menu_handler(message: Message):
         if active_orders:
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text=f"{order['product']['name']} от {order['user_id']}",
-                                      callback_data=f"active_order_{order_id}")]
+                                      callback_data=f"active_order_{order["user_id"]}")]
                 for order_id, order in active_orders.items()
             ])
             await send_or_edit(message.bot, message.chat.id, user_id, "Список активных заказов:", reply_markup=kb)
