@@ -1,3 +1,0 @@
-API_TOKEN = ""
-ADMINS_ID = {""}
-DELIVERY_FEE = 300

@@ -76,8 +76,6 @@ async def admin_product_options(callback: types.CallbackQuery):
 async def admin_edit_product(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     product_id = str(callback.data).split("_")[-1]
-    print(f"admin_edit_product: product_id из callback: {product_id}")
-    print(f"Текущие ключи assortment: {list(assortment.keys())}")
 
     if str(user_id) not in admin_ids:
         await callback.answer("Доступ запрещен!")

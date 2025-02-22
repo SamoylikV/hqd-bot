@@ -1,4 +1,4 @@
-from aiogram import Router, types
+from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.types import Message, ForceReply, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 
@@ -10,13 +10,9 @@ from state import user_data, admin_ids, admin_states, active_orders, active_conv
 
 router = Router(name="start_and_admin")
 
-@router.message()
-async def echo(message: types.Message):
-    print(123123)
-    await message.answer(message.text)
 
 @router.message(Command("start"))
-async def start_handler(message: types.Message):
+async def start(message: types.Message):
     user_id = message.from_user.id
     user_data.setdefault(user_id, {})
     await send_or_edit(message.bot,
@@ -51,8 +47,9 @@ async def admin_menu_handler(message: Message):
     elif text == "Активные заказы":
         if active_orders:
             kb = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"{order['product']['name']} от {uid}", callback_data=f"active_order_{uid}")]
-                for uid, order in active_orders.items()
+                [InlineKeyboardButton(text=f"{order['product']['name']} от {order['user_id']}",
+                                      callback_data=f"active_order_{order_id}")]
+                for order_id, order in active_orders.items()
             ])
             await send_or_edit(message.bot, message.chat.id, user_id, "Список активных заказов:", reply_markup=kb)
         else:

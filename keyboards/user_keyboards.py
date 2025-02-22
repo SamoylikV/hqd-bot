@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import DELIVERY_FEE
+from state import assortment, user_data
 
 main_menu_keyboard = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="1. Самовывоз", callback_data="pickup")],
@@ -7,7 +8,7 @@ main_menu_keyboard = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="3. Настройки", callback_data="settings")]
 ])
 
-def get_assortment_keyboard(order_type: str, assortment: dict):
+def get_assortment_keyboard(order_type):
     buttons = []
     for key, product in assortment.items():
         price = product["base_price"] + DELIVERY_FEE if order_type == "delivery" else product["base_price"]
@@ -21,7 +22,7 @@ def get_flavor_keyboard(product):
         buttons.append([InlineKeyboardButton(text=flavor, callback_data=f"flavor_{product['name']}_{idx}")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-def get_price_text_and_keyboard(user_id, product, user_data: dict):
+def get_price_text_and_keyboard(user_id, product):
     order_type = user_data[user_id]["order_type"]
     if order_type == "pickup":
         final_price = product["base_price"] - DELIVERY_FEE

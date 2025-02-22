@@ -1,13 +1,13 @@
 import logging
+import uuid
 
 from aiogram import Router, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from keyboards.user_keyboards import get_assortment_keyboard, get_price_text_and_keyboard, get_flavor_keyboard
-from state import user_data, admin_ids, assortment, send_or_edit, saved_addresses
+from state import user_data, admin_ids, assortment, send_or_edit, saved_addresses, payment_requests
 
 router = Router(name="user_interaction")
-
 
 @router.callback_query(lambda c: c.data in ["pickup", "delivery", "settings"])
 async def main_menu_handler(callback: types.CallbackQuery):
@@ -170,12 +170,17 @@ async def order_confirmation(callback: types.CallbackQuery):
 async def cash_payment_confirmation(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     user_nick = callback.from_user.username if callback.from_user.username else callback.from_user.first_name
-    amount = user_data.get(user_id, {}).get("final_price", "none")
-    name = user_data.get(user_id, {}).get("product", {}).get("name", "None")
-    flavor = user_data.get(user_id, {}).get("flavor", "none")
-    address = user_data.get(user_id, {}).get("address", "none")
-    if address == "none":
-        address = user_data.get(user_id, {}).get("temp_address", "none")
+    user_data_entry = user_data.get(user_id, {})
+    request_id = str(uuid.uuid4())
+    payment_requests[request_id] = {
+        "user_id": user_id,
+        "user_nick": callback.from_user.username or callback.from_user.first_name,
+        "amount": user_data_entry.get("final_price", "none"),
+        "product_name": user_data_entry.get("product", {}).get("name", "None"),
+        "flavor": user_data_entry.get("flavor", "none"),
+        "address": user_data_entry.get("address") or user_data_entry.get("temp_address", "none")
+    }
+    amount = user_data_entry.get("final_price", "none")
     msg = await send_or_edit(callback.bot,
                              callback.message.chat.id,
                              user_id,
@@ -185,17 +190,12 @@ async def cash_payment_confirmation(callback: types.CallbackQuery):
     user_data[user_id]["payment_message_id"] = msg
 
     for admin_id in admin_ids:
-        print(user_data)
         try:
-            if address == "none":
-                address = "a"
-            callback_data = f"admin_confirm_payment_{user_nick}_{user_id}_{name}_{flavor}_{address}"
-            print(callback_data)
             await callback.bot.send_message(
                 int(admin_id),
                 f"Пользователь @{user_nick} оформил заказ {amount} наличными. Подтвердите заказ",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="Подтвердить заказ", callback_data=callback_data)]
+                    [InlineKeyboardButton(text="Подтвердить заказ", callback_data=f"admin_confirm_payment_{request_id}")]
                 ])
             )
         except Exception as e:
@@ -207,12 +207,17 @@ async def cash_payment_confirmation(callback: types.CallbackQuery):
 async def transfer_confirmation(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     user_nick = callback.from_user.username if callback.from_user.username else callback.from_user.first_name
-    amount = user_data.get(user_id, {}).get("final_price", "none")
-    name = user_data.get(user_id, {}).get("product", {}).get("name", "None")
-    flavor = user_data.get(user_id, {}).get("flavor", "none")
-    address = user_data.get(user_id, {}).get("address", "none")
-    if address == "none":
-        address = user_data.get(user_id, {}).get("temp_address", "none")
+    user_data_entry = user_data.get(user_id, {})
+    request_id = str(uuid.uuid4())
+    payment_requests[request_id] = {
+        "user_id": user_id,
+        "user_nick": callback.from_user.username or callback.from_user.first_name,
+        "amount": user_data_entry.get("final_price", "none"),
+        "product_name": user_data_entry.get("product", {}).get("name", "None"),
+        "flavor": user_data_entry.get("flavor", "none"),
+        "address": user_data_entry.get("address") or user_data_entry.get("temp_address", "none")
+    }
+    amount = user_data_entry.get("final_price", "none")
     msg = await send_or_edit(callback.bot,
                              callback.message.chat.id,
                              user_id,
@@ -222,16 +227,12 @@ async def transfer_confirmation(callback: types.CallbackQuery):
     user_data[user_id]["payment_message_id"] = msg
 
     for admin_id in admin_ids:
-        print(admin_id)
         try:
-            if address == "none":
-                address = "a"
-            callback_data = f"admin_confirm_payment_{user_nick}_{user_id}_{name}_{flavor}_{address}"
             await callback.bot.send_message(
                 admin_id,
                 f"Пользователь @{user_nick} подтвердил перевод на сумму {amount}. Подтвердите, что оплата получена.",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="Подтвердить оплату", callback_data=callback_data)]
+                    [InlineKeyboardButton(text="Подтвердить оплату", callback_data=f"admin_confirm_payment_{request_id}")]
                 ])
             )
         except Exception as e:

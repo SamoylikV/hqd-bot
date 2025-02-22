@@ -1,5 +1,8 @@
+from config import ADMINS_ID
+
 user_data = {}
-admin_ids = []
+payment_requests = {}
+admin_ids = ADMINS_ID
 admin_states = {}
 active_orders = {}
 active_conversations = {}

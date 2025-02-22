@@ -13,11 +13,11 @@ def get_routers():
 
     router = Router()
     router.include_routers(
+        start_and_admin.router,
         admin_orders.router,
         admin_assortment.router,
         chat_handlers.router,
         message_handling.router,
-        start_and_admin.router,
         user_interaction.router,
     )
     return router

@@ -1,19 +1,28 @@
 import logging
+import uuid
+
 from aiogram import Router, types
 from handlers.chat_handlers import start_conversation
 from keyboards.admin_keyboards import admin_menu_reply, get_admin_exit_reply_keyboard
-from state import user_data, active_orders, send_or_edit
+from state import user_data, active_orders, send_or_edit, payment_requests
 
 router = Router(name="admin_orders")
 
 
 @router.callback_query(lambda c: c.data.startswith("admin_confirm_payment_"))
 async def admin_payment_confirmation(callback: types.CallbackQuery):
-    customer_id = int(callback.data.split("_")[4])
+    request_id = callback.data.split("_")[-1]
+    request_data = payment_requests.get(request_id)
+    if not request_data:
+        await callback.answer("Запрос устарел или не найден!")
+        return
+
+    customer_id = request_data["user_id"]
     payment_msg_id = user_data.get(customer_id, {}).get("payment_message_id")
-    product = callback.data.split("_")[5]
-    flavor = callback.data.split("_")[6]
-    address = callback.data.split("_")[7]
+    product = request_data["product_name"]
+    flavor = request_data["flavor"]
+    address = request_data["address"]
+    del payment_requests[request_id]
     if payment_msg_id:
         try:
             await callback.bot.edit_message_text(
@@ -30,7 +39,9 @@ async def admin_payment_confirmation(callback: types.CallbackQuery):
             await callback.message.edit_text(f"Оплата подтверждена.\nСАМОВЫВОЗ\n{product}\n{flavor}")
     except Exception:
         pass
-    active_orders[customer_id] = {
+    order_id = str(uuid.uuid4())
+    active_orders[order_id] = {
+        "order_id": order_id,
         "user_id": customer_id,
         "product": user_data.get(customer_id, {}).get("product"),
         "flavor": user_data.get(customer_id, {}).get("flavor"),
