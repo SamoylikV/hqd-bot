@@ -1,5 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
+from state import assortment
+
 admin_menu_reply = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Редактировать ассортимент")],
@@ -10,7 +12,7 @@ admin_menu_reply = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-def get_admin_assortment_keyboard(assortment: dict):
+def get_admin_assortment_keyboard():
     buttons = []
     for key, prod in assortment.items():
         buttons.append([InlineKeyboardButton(

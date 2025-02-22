@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, ForceReply, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 
 from config import DELIVERY_FEE
+from filters import UserNotInConversation, AdminNotInConversation
 from keyboards.admin_keyboards import get_admin_assortment_keyboard, admin_menu_reply
 from keyboards.user_keyboards import main_menu_keyboard
 
@@ -11,7 +12,7 @@ from state import user_data, admin_ids, admin_states, active_orders, active_conv
 router = Router(name="start_and_admin")
 
 
-@router.message(Command("start"))
+@router.message(Command("start"), UserNotInConversation())
 async def start(message: types.Message):
     user_id = message.from_user.id
     user_data.setdefault(user_id, {})
@@ -21,13 +22,17 @@ async def start(message: types.Message):
         reply_markup=main_menu_keyboard
     )
 
-@router.message(Command("admin"))
+@router.message(Command("admin"), AdminNotInConversation())
 async def admin_handler(message: types.Message):
     user_id = message.from_user.id
     if str(user_id) in admin_ids:
         await send_or_edit(message.bot, message.chat.id, user_id, "Добро пожаловать в админку!", reply_markup=admin_menu_reply)
     else:
         await send_or_edit(message.bot, message.chat.id, user_id, "У вас нет доступа в админку.")
+
+@router.message(Command("start", "admin"))
+async def block_commands_in_conversation(message: Message):
+    await message.answer("⚠️ Эта команда недоступна во время диалога!")
 
 @router.message(lambda m: m.text in ["Редактировать ассортимент", "Редактировать цену доставки", "Активные заказы",
                                      "Выйти из админки"])
@@ -70,6 +75,6 @@ async def admin_exit_chat_handler(message: Message):
         active_conversations.pop(partner_id, None)
         user_data[user_id]["in_chat"] = False
         user_data[partner_id]["in_chat"] = False
-        await send_or_edit(message.bot, message.bot, message.chat.id, user_id, "Вы вышли из диалога.", reply_markup=admin_menu_reply)
+        await send_or_edit(message.bot, message.chat.id, user_id, "Вы вышли из диалога.", reply_markup=admin_menu_reply)
     else:
-        await send_or_edit(message.bot, message.bot, message.chat.id, user_id, "Вы не в диалоге.")
+        await send_or_edit(message.bot, message.chat.id, user_id, "Вы не в диалоге.")

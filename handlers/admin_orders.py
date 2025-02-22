@@ -1,6 +1,5 @@
 import logging
 import uuid
-from pickletools import pybytes_or_str
 
 from aiogram import Router, types
 from handlers.chat_handlers import start_conversation
@@ -39,6 +38,7 @@ async def admin_payment_confirmation(callback: types.CallbackQuery):
             await callback.message.edit_text(f"Оплата подтверждена.\nСАМОВЫВОЗ\n{product}\n{flavor}")
     except Exception:
         pass
+
     order_id = str(uuid.uuid4())
     active_orders[order_id] = {
         "order_id": order_id,

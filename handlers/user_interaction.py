@@ -18,7 +18,7 @@ async def main_menu_handler(callback: types.CallbackQuery):
     if choice == "pickup":
         await send_or_edit(callback.bot, callback.message.chat.id, user_id,
                            "Вы выбрали самовывоз.\nВот наш ассортимент:",
-                           reply_markup=get_assortment_keyboard("pickup"))
+                           reply_markup=get_assortment_keyboard("pickup", user_id))
     elif choice == "delivery":
         if saved_addresses.get(user_id):
             address = saved_addresses[user_id]
@@ -47,7 +47,7 @@ async def address_choice_handler(callback: types.CallbackQuery):
         await send_or_edit(callback.bot, callback.message.chat.id, user_id,
                            f"Используем сохранённый адрес:\n{saved_addresses[user_id]}")
         await send_or_edit(callback.bot, callback.message.chat.id, user_id, "Вот наш ассортимент:",
-                           reply_markup=get_assortment_keyboard("delivery"))
+                           reply_markup=get_assortment_keyboard("delivery", user_id))
     else:
         await send_or_edit(callback.bot, callback.message.chat.id, user_id, "Пожалуйста, введите новый адрес доставки:")
         user_data[user_id]["awaiting_address"] = True
@@ -63,7 +63,7 @@ async def save_address_handler(callback: types.CallbackQuery):
         user_data[user_id]["address"] = address
         await send_or_edit(callback.bot, callback.message.chat.id, user_id, f"Адрес сохранён:\n{address}")
         await send_or_edit(callback.bot, callback.message.chat.id, user_id, "Вот наш ассортимент:",
-                           reply_markup=get_assortment_keyboard("delivery"))
+                           reply_markup=get_assortment_keyboard("delivery", user_id))
     else:
         await send_or_edit(callback.bot, callback.message.chat.id, user_id, "Ошибка: адрес не найден.")
     await callback.answer()
@@ -78,7 +78,7 @@ async def save_address_no_handler(callback: types.CallbackQuery):
         await send_or_edit(callback.bot, callback.message.chat.id, user_id,
                            f"Адрес использован только для текущего заказа:\n{address}")
         await send_or_edit(callback.bot, callback.message.chat.id, user_id, "Вот наш ассортимент:",
-                           reply_markup=get_assortment_keyboard("delivery"))
+                           reply_markup=get_assortment_keyboard("delivery", user_id))
     else:
         await send_or_edit(callback.bot, callback.message.chat.id, user_id, "Ошибка: адрес не найден.")
     await callback.answer()

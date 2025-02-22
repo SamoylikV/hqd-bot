@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from config import DELIVERY_FEE
-from state import assortment, user_data
+
+import utils
+from state import assortment, user_data, saved_addresses
 
 main_menu_keyboard = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="1. Самовывоз", callback_data="pickup")],
@@ -8,10 +9,15 @@ main_menu_keyboard = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="3. Настройки", callback_data="settings")]
 ])
 
-def get_assortment_keyboard(order_type):
+def get_assortment_keyboard(order_type, user_id):
     buttons = []
     for key, product in assortment.items():
-        price = product["base_price"] + DELIVERY_FEE if order_type == "delivery" else product["base_price"]
+        print(order_type)
+        if order_type == "delivery":
+            price = product["base_price"] + utils.get_delivery_price(saved_addresses[user_id])
+            price = "{:.2f}".format(price)
+        else:
+            price = product["base_price"]
         text = f"{key}. {product['name']} ({price}₽)"
         buttons.append([InlineKeyboardButton(text=text, callback_data=f"product_{key}")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -25,15 +31,17 @@ def get_flavor_keyboard(product):
 def get_price_text_and_keyboard(user_id, product):
     order_type = user_data[user_id]["order_type"]
     if order_type == "pickup":
-        final_price = product["base_price"] - DELIVERY_FEE
-        price_text = f"Итоговая цена: {final_price}₽ (самовывоз)"
+        final_price = product["base_price"]
+        price_text = f"Итоговая цена: {final_price}₽"
         confirmation_keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="Оплатить онлайн", callback_data="confirm_order"),
              InlineKeyboardButton(text="Оплатить наличными", callback_data="cash_payment")]
         ])
     else:
         final_price = product["base_price"]
-        price_text = f"Итоговая цена: {final_price}₽ (с доставкой)"
+        price = product["base_price"] + utils.get_delivery_price(saved_addresses[user_id])
+        price = "{:.2f}".format(price)
+        price_text = f"Итоговая цена: {price}₽ (с доставкой)"
         confirmation_keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_order"),
              InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order")]
