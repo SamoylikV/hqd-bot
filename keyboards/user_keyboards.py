@@ -4,9 +4,8 @@ from state import assortment, user_data, saved_addresses
 from utils.delivery_price import get_delivery_price
 
 main_menu_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="1. Самовывоз", callback_data="pickup")],
-    [InlineKeyboardButton(text="2. Доставка", callback_data="delivery")],
-    [InlineKeyboardButton(text="3. Настройки", callback_data="settings")]
+    [InlineKeyboardButton(text="Самовывоз", callback_data="pickup")],
+    [InlineKeyboardButton(text="Доставка", callback_data="delivery")]
 ])
 
 def get_assortment_keyboard(order_type, user_id):
@@ -17,7 +16,7 @@ def get_assortment_keyboard(order_type, user_id):
             price = "{:.2f}".format(price)
         else:
             price = product["base_price"]
-        text = f"{key}. {product['name']} ({price}₽)"
+        text = f"{product['name']} ({price}₽)"
         buttons.append([InlineKeyboardButton(text=text, callback_data=f"product_{key}")])
     buttons.append([InlineKeyboardButton(text="Назад", callback_data="back_to_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)

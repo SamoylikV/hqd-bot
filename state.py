@@ -1,17 +1,19 @@
-from config import ADMINS_ID
+import redis
 
-user_data = {}
-payment_requests = {}
+from config import ADMINS_ID
+from services.redis_storage import RedisDict
+
+redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+
+user_data = RedisDict(redis_client, "user_data")
+payment_requests = RedisDict(redis_client, "payment_requests")
+admin_states = RedisDict(redis_client, "admin_states")
+active_orders = RedisDict(redis_client, "active_orders")
+active_conversations = RedisDict(redis_client, "active_conversations")
+active_admins = RedisDict(redis_client, "active_admins")
+saved_addresses = RedisDict(redis_client, "saved_addresses")
+assortment = RedisDict(redis_client, "assortment")
 admin_ids = ADMINS_ID
-admin_states = {}
-active_orders = {}
-active_conversations = {}
-saved_addresses = {}
-assortment = {
-    "1": {"name": "Товар1", "base_price": 2400, "flavors": ["Клубника", "Банан"]},
-    "2": {"name": "Товар2", "base_price": 1500, "flavors": ["Ваниль", "Шоколад"]},
-    "3": {"name": "Товар3", "base_price": 2000, "flavors": ["Мята", "Ваниль", "Клубника"]},
-}
 
 async def send_or_edit(bot, chat_id: int, user_id: int, text: str, reply_markup=None):
     last_msg_id = user_data.get(user_id, {}).get("last_message_id")

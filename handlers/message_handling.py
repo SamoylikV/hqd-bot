@@ -41,7 +41,7 @@ async def handle_messages(message: Message):
                     await send_or_edit(message.bot,
                         message.chat.id,
                         user_id,
-                        "Введите первый вкус продукта (оставьте пустым для завершения):",
+                        "Введите первый вкус продукта:",
                         reply_markup=ForceReply()
                     )
                 except ValueError:
