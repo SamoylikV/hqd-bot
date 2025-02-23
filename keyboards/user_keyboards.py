@@ -31,7 +31,7 @@ def get_flavor_keyboard(product):
 def get_price_text_and_keyboard(user_id, product):
     order_type = user_data[user_id]["order_type"]
     if order_type == "pickup":
-        final_price = product["final_price"]
+        final_price = product["base_price"]
         price_text = f"Итоговая цена: {final_price}₽"
         confirmation_keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="Оплатить онлайн", callback_data="confirm_order"),
@@ -41,9 +41,9 @@ def get_price_text_and_keyboard(user_id, product):
         ])
     else:
         final_price = product["base_price"]
-        price = product["base_price"] + get_delivery_price(saved_addresses[user_id])
-        price = "{:.2f}".format(price)
-        price_text = f"Итоговая цена: {price}₽ (с доставкой)"
+        final_price = product["base_price"] + get_delivery_price(saved_addresses[user_id])
+        final_price = "{:.2f}".format(final_price)
+        price_text = f"Итоговая цена: {final_price}₽ (с доставкой)"
         confirmation_keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_order"),
              InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order")]

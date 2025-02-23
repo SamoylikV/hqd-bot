@@ -97,7 +97,6 @@ async def product_selection(callback: types.CallbackQuery):
         return
     product = assortment[product_number]
     user_data[user_id]["product"] = product
-
     if product.get("flavors"):
         await send_or_edit(callback.bot, callback.message.chat.id, user_id, "Выберите вкус:",
                            reply_markup=get_flavor_keyboard(product))
