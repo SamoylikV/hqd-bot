@@ -6,7 +6,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from keyboards.user_keyboards import get_assortment_keyboard, get_price_text_and_keyboard, get_flavor_keyboard, \
     main_menu_keyboard
-from state import user_data, admin_ids, assortment, send_or_edit, saved_addresses, payment_requests
+from state import user_data, admin_ids, assortment, saved_addresses, payment_requests
+from utils.send_or_edit import send_or_edit
 
 router = Router(name="user_interaction")
 

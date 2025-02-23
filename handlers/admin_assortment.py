@@ -2,7 +2,8 @@ from aiogram import Router, types
 from aiogram.types import ForceReply, InlineKeyboardMarkup, InlineKeyboardButton
 
 from keyboards.admin_keyboards import get_admin_assortment_keyboard, admin_menu_reply
-from state import admin_ids, admin_states, assortment, send_or_edit
+from state import admin_ids, admin_states, assortment
+from utils.send_or_edit import send_or_edit
 
 router = Router(name="admin_assortment")
 

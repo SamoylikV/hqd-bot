@@ -7,7 +7,8 @@ from utils.filters import UserNotInConversation, AdminNotInConversation, AdminNo
 from keyboards.admin_keyboards import get_admin_assortment_keyboard, admin_menu_reply
 from keyboards.user_keyboards import main_menu_keyboard
 
-from state import user_data, admin_ids, admin_states, active_orders, active_conversations, send_or_edit, active_admins
+from state import user_data, admin_ids, admin_states, active_orders, active_conversations, active_admins
+from utils.send_or_edit import send_or_edit
 
 router = Router(name="start_and_admin")
 
@@ -55,13 +56,15 @@ async def admin_menu_handler(message: Message):
             buttons = []
             for order_id, order in active_orders.items():
                 buttons.append([InlineKeyboardButton(text=f"{order['product']['name']} от {order['user_id']}",
-                                       callback_data=f"active_order_{order["user_id"]}")])
+                                       callback_data=f"active_order_{order["order_id"].split('-')[-1]}_{order["user_id"]}")])
             buttons.append([InlineKeyboardButton(text="Назад", callback_data="admin_back_to_menu")])
 
             kb = InlineKeyboardMarkup(inline_keyboard=buttons)
             await send_or_edit(message.bot, message.chat.id, user_id, "Список активных заказов:", reply_markup=kb)
         else:
-            await send_or_edit(message.bot, message.chat.id, user_id, "Нет активных заказов.")
+            buttons = [[InlineKeyboardButton(text="Назад", callback_data="admin_back_to_menu")]]
+            kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+            await send_or_edit(message.bot, message.chat.id, user_id, "Нет активных заказов.", reply_markup=kb)
 
     elif text == "Выйти из админки":
         await send_or_edit(message.bot, message.chat.id, user_id, "Выход из админки", reply_markup=ReplyKeyboardRemove())

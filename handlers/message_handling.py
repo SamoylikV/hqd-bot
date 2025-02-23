@@ -3,8 +3,9 @@ from aiogram.types import Message, ForceReply, InlineKeyboardMarkup, InlineKeybo
 
 from keyboards.admin_keyboards import get_admin_assortment_keyboard, get_flavor_input_keyboard, \
     get_admin_exit_reply_keyboard, admin_menu_reply
-from state import user_data, admin_ids, admin_states, active_orders, active_conversations, assortment, send_or_edit
+from state import user_data, admin_ids, admin_states, active_orders, active_conversations, assortment
 from utils.delivery_price import get_location
+from utils.send_or_edit import send_or_edit
 
 router = Router(name="message_handling")
 
@@ -203,7 +204,9 @@ async def handle_messages(message: Message):
                 ])
                 await send_or_edit(message.bot, message.chat.id, user_id, "Список активных заказов:", reply_markup=kb)
             else:
-                await send_or_edit(message.bot, message.chat.id, user_id, "Нет активных заказов.")
+                buttons = [[InlineKeyboardButton(text="Назад", callback_data="admin_back_to_menu")]]
+                kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+                await send_or_edit(message.bot, message.chat.id, user_id, "Нет активных заказов.", reply_markup=kb)
             return
 
     if user_data.get(user_id, {}).get("awaiting_address", False):

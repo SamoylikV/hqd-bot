@@ -29,5 +29,11 @@ def get_flavor_input_keyboard():
          InlineKeyboardButton(text="Сохранить", callback_data="flavor_save")]
     ])
 
+def get_order_action_reply_keyboard(customer_id, order_id):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Начать чат", callback_data=f"start_chat_{customer_id}"),
+         InlineKeyboardButton(text="Закрыть заказ", callback_data=f"close_order_{order_id}_{customer_id}")]
+    ])
+
 def get_admin_exit_reply_keyboard():
     return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="Выйти из диалога")]], resize_keyboard=True)

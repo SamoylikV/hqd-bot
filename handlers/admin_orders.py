@@ -1,11 +1,15 @@
 import logging
 import uuid
+from itertools import product
 
 from aiogram import Router, types
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
 from handlers.chat_handlers import start_conversation
-from keyboards.admin_keyboards import admin_menu_reply, get_admin_exit_reply_keyboard
+from keyboards.admin_keyboards import admin_menu_reply, get_admin_exit_reply_keyboard, get_order_action_reply_keyboard
 from keyboards.user_keyboards import main_menu_keyboard
-from state import user_data, active_orders, send_or_edit, payment_requests
+from state import user_data, active_orders, payment_requests
+from utils.send_or_edit import send_or_edit
 
 router = Router(name="admin_orders")
 
@@ -62,13 +66,61 @@ async def admin_back_to_menu(callback: types.CallbackQuery):
     await callback.answer()
 
 
-
 @router.callback_query(lambda c: c.data.startswith("active_order_"))
 async def active_order_handler(callback: types.CallbackQuery):
     customer_id = int(callback.data.split("_")[-1])
+    order_id_suffix = callback.data.split("_")[-2]
+    admin_id = callback.from_user.id
+    full_order_id = next((key for key in active_orders if key.endswith(order_id_suffix)), None)
+
+    order = active_orders.get(full_order_id, {})
+    product_name = order.get("product", {}).get("name", "")
+    flavor = order.get("flavor", "")
+    order_type = "Самовывоз" if order.get("order_type", "") == "pickup" else "Доставка"
+    address = order.get("address", "") or ""
+    price = order.get("final_price", "")
+
+    html_message = (
+        f"<b>Заказ от клиента:</b> <code>{customer_id}</code><br>"
+        f"<b>Тип заказа:</b> {order_type}<br>"
+        f"<b>Продукт:</b> {product_name}<br>"
+        f"<b>Вкус:</b> {flavor}<br>"
+        f"<b>Адрес:</b> {address}<br>"
+        f"<b>Цена:</b> {price}"
+    )
+
+    await send_or_edit(
+        callback.bot,
+        callback.message.chat.id,
+        admin_id,
+        html_message,
+        parse_mode="HTML",
+        reply_markup=get_order_action_reply_keyboard(customer_id, order_id_suffix)
+    )
+
+@router.callback_query(lambda c: c.data.startswith("start_chat_"))
+async def start_chat(callback: types.CallbackQuery):
+    customer_id = int(callback.data.split("_")[-1])
     admin_id = callback.from_user.id
     start_conversation(admin_id, customer_id)
-    await send_or_edit(callback.bot, callback.message.chat.id, admin_id, f"Начался диалог с пользователем {customer_id}.",
+    await send_or_edit(callback.bot, callback.message.chat.id, admin_id,
+                       f"Начался диалог с пользователем {customer_id}.",
                        reply_markup=get_admin_exit_reply_keyboard())
     await callback.bot.send_message(customer_id, "Администратор начал диалог с вами.", reply_markup=None)
+    await callback.answer()
+
+@router.callback_query(lambda c: c.data.startswith("close_order_"))
+async def close_order(callback: types.CallbackQuery):
+    order_id_suffix = callback.data.split("_")[-2]
+
+    full_order_id = next((key for key in active_orders if key.endswith(order_id_suffix)), None)
+    buttons = [[InlineKeyboardButton(text="Назад", callback_data="admin_back_to_menu")]]
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+    if full_order_id:
+        active_orders.pop(full_order_id)
+        await send_or_edit(callback.bot, callback.message.chat.id, callback.from_user.id, f"Заказ {full_order_id} удален", reply_markup=kb)
+    else:
+        await send_or_edit(callback.bot, callback.message.chat.id, callback.from_user.id,
+                           f"Заказ с окончанием ID {order_id_suffix} не найден.", reply_markup=kb)
+
     await callback.answer()

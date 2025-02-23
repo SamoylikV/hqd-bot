@@ -1,14 +1,10 @@
 import asyncio
 import logging
 
-import redis
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
+from aiogram import Bot, Dispatcher
 
 from config import API_TOKEN
 import handlers
-from keyboards.user_keyboards import main_menu_keyboard
-from state import user_data, send_or_edit
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
