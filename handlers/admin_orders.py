@@ -4,6 +4,7 @@ import uuid
 from aiogram import Router, types
 from handlers.chat_handlers import start_conversation
 from keyboards.admin_keyboards import admin_menu_reply, get_admin_exit_reply_keyboard
+from keyboards.user_keyboards import main_menu_keyboard
 from state import user_data, active_orders, send_or_edit, payment_requests
 
 router = Router(name="admin_orders")
@@ -29,6 +30,7 @@ async def admin_payment_confirmation(callback: types.CallbackQuery):
                 chat_id=customer_id,
                 message_id=payment_msg_id
             )
+            await send_or_edit(callback.bot, callback.message.chat.id, callback.from_user.id, "Добро пожаловать! Выберите опцию:", main_menu_keyboard)
         except Exception as e:
             logging.error(f"Не удалось обновить сообщение: {e}")
     try:

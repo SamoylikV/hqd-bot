@@ -7,6 +7,8 @@ annotated-types==0.7.0
 attrs==25.1.0
 certifi==2025.1.31
 frozenlist==1.5.0
+geographiclib==2.0
+geopy==2.4.1
 idna==3.10
 magic-filter==1.0.12
 multidict==6.1.0

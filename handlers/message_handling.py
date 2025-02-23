@@ -1,10 +1,10 @@
 from aiogram import Router
 from aiogram.types import Message, ForceReply, InlineKeyboardMarkup, InlineKeyboardButton
 
-import utils
 from keyboards.admin_keyboards import get_admin_assortment_keyboard, get_flavor_input_keyboard, \
     get_admin_exit_reply_keyboard, admin_menu_reply
 from state import user_data, admin_ids, admin_states, active_orders, active_conversations, assortment, send_or_edit
+from utils.delivery_price import get_location
 
 router = Router(name="message_handling")
 
@@ -208,13 +208,12 @@ async def handle_messages(message: Message):
 
     if user_data.get(user_id, {}).get("awaiting_address", False):
         address = text.strip()
-        location = utils.get_location(address)
-        print(location)
+        location = get_location(address)
         if location is None:
             await send_or_edit(message.bot,
                                message.chat.id,
                                user_id,
-                               "❌ Неверный формат адреса. Пожалуйста, введите адрес в формате:\nГ. Санкт-Петербург, Улица Примерная 123",
+                               "❌ Неверный формат адреса. Пожалуйста, введите адрес в формате:\nГ. Санкт-Петербург, Улица Примерная 123\n(ДОСТАВКА ТОЛЬКО ПО САНКТ_ПЕТЕРБУРГУ)",
                                reply_markup=ForceReply()
                                )
             return

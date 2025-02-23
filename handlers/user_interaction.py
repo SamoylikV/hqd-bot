@@ -4,7 +4,8 @@ import uuid
 from aiogram import Router, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from keyboards.user_keyboards import get_assortment_keyboard, get_price_text_and_keyboard, get_flavor_keyboard
+from keyboards.user_keyboards import get_assortment_keyboard, get_price_text_and_keyboard, get_flavor_keyboard, \
+    main_menu_keyboard
 from state import user_data, admin_ids, assortment, send_or_edit, saved_addresses, payment_requests
 
 router = Router(name="user_interaction")
@@ -238,3 +239,12 @@ async def transfer_confirmation(callback: types.CallbackQuery):
         except Exception as e:
             logging.error(f"Ошибка при отправке уведомления администратору {admin_id}: {e}")
     await callback.answer()
+
+@router.callback_query(lambda c: c.data == "back_to_menu")
+async def back_to_menu(callback: types.CallbackQuery):
+    await send_or_edit(callback.bot,
+                       callback.message.chat.id, callback.from_user.id,
+                       "Добро пожаловать! Выберите опцию:",
+                       reply_markup=main_menu_keyboard
+                       )
+

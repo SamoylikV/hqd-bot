@@ -6,7 +6,6 @@ from state import active_conversations
 class UserNotInConversation(Filter):
     async def __call__(self, message: Message) -> bool:
         user_id = message.from_user.id
-        print(active_conversations)
         for conv in active_conversations.values():
             if user_id == conv:
                 return False
