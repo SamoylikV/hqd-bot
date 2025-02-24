@@ -1,2 +1,0 @@
-# hqd-bot
-# hqd-bot
